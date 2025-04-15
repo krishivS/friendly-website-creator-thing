@@ -13,11 +13,13 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { updateAttendanceStatus, deleteAttendanceRecord } from '@/utils/courseUtils';
 
 interface CourseAttendanceListProps {
   courseId: string;
   isTeacher: boolean;
   studentId?: string;
+  onRecordUpdated?: () => void;
 }
 
 interface AttendanceRecord {
@@ -32,7 +34,12 @@ interface AttendanceRecord {
   }[];
 }
 
-const CourseAttendanceList: React.FC<CourseAttendanceListProps> = ({ courseId, isTeacher, studentId }) => {
+const CourseAttendanceList: React.FC<CourseAttendanceListProps> = ({ 
+  courseId, 
+  isTeacher, 
+  studentId,
+  onRecordUpdated 
+}) => {
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -48,6 +55,8 @@ const CourseAttendanceList: React.FC<CourseAttendanceListProps> = ({ courseId, i
   } | null>(null);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [recordToDelete, setRecordToDelete] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchAttendanceRecords();
@@ -151,13 +160,13 @@ const CourseAttendanceList: React.FC<CourseAttendanceListProps> = ({ courseId, i
   const handleStatusChange = async (newStatus: 'present' | 'absent' | 'late' | 'excused') => {
     if (!selectedStudent) return;
     
+    setIsSaving(true);
     try {
-      const { error } = await supabase
-        .from('student_attendance')
-        .update({ status: newStatus })
-        .eq('id', selectedStudent.attendanceId);
-        
-      if (error) throw error;
+      const { success, error } = await updateAttendanceStatus(selectedStudent.attendanceId, newStatus);
+      
+      if (!success) {
+        throw new Error(error || 'Failed to update status');
+      }
       
       // Update local state
       setAttendanceRecords(prevRecords => 
@@ -182,13 +191,19 @@ const CourseAttendanceList: React.FC<CourseAttendanceListProps> = ({ courseId, i
         title: 'Success',
         description: 'Attendance status updated',
       });
-    } catch (error) {
+
+      if (onRecordUpdated) {
+        onRecordUpdated();
+      }
+    } catch (error: any) {
       console.error('Error updating status:', error);
       toast({
         title: 'Error',
-        description: 'Failed to update attendance status',
+        description: error.message || 'Failed to update attendance status',
         variant: 'destructive',
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -200,14 +215,13 @@ const CourseAttendanceList: React.FC<CourseAttendanceListProps> = ({ courseId, i
   const handleDeleteRecord = async () => {
     if (!recordToDelete) return;
     
+    setIsDeleting(true);
     try {
-      // Delete the attendance record - cascade will handle the student_attendance records
-      const { error } = await supabase
-        .from('attendance_records')
-        .delete()
-        .eq('id', recordToDelete);
-        
-      if (error) throw error;
+      const { success, error } = await deleteAttendanceRecord(recordToDelete);
+      
+      if (!success) {
+        throw new Error(error || 'Failed to delete record');
+      }
       
       // Update local state
       setAttendanceRecords(prevRecords => 
@@ -221,13 +235,19 @@ const CourseAttendanceList: React.FC<CourseAttendanceListProps> = ({ courseId, i
         title: 'Success',
         description: 'Attendance record deleted',
       });
-    } catch (error) {
+
+      if (onRecordUpdated) {
+        onRecordUpdated();
+      }
+    } catch (error: any) {
       console.error('Error deleting record:', error);
       toast({
         title: 'Error',
-        description: 'Failed to delete attendance record',
+        description: error.message || 'Failed to delete attendance record',
         variant: 'destructive',
       });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -400,6 +420,7 @@ const CourseAttendanceList: React.FC<CourseAttendanceListProps> = ({ courseId, i
                 onValueChange={(value: 'present' | 'absent' | 'late' | 'excused') => 
                   handleStatusChange(value)
                 }
+                disabled={isSaving}
               >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="present" id="present" />
@@ -421,9 +442,19 @@ const CourseAttendanceList: React.FC<CourseAttendanceListProps> = ({ courseId, i
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditingRecord(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsEditingRecord(false)}
+              disabled={isSaving}
+            >
               Cancel
             </Button>
+            {isSaving && (
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
+                <span>Saving...</span>
+              </div>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -439,11 +470,24 @@ const CourseAttendanceList: React.FC<CourseAttendanceListProps> = ({ courseId, i
             <p className="text-gray-500 mt-2">This will delete the attendance for all students on this date and cannot be undone.</p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsConfirmingDelete(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsConfirmingDelete(false)}
+              disabled={isDeleting}
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDeleteRecord}>
-              Delete
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteRecord}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Deleting...
+                </>
+              ) : 'Delete'}
             </Button>
           </DialogFooter>
         </DialogContent>

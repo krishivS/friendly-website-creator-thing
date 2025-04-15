@@ -17,6 +17,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { addCourse } from '@/utils/courseUtils';
+import StudentEnrollment from '@/components/courses/StudentEnrollment';
+import QuickAttendance from '@/components/attendance/QuickAttendance';
 
 const AttendancePage: React.FC = () => {
   const { currentUser } = useAuth();
@@ -24,6 +27,7 @@ const AttendancePage: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const [isQuickAttendance, setIsQuickAttendance] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddingCourse, setIsAddingCourse] = useState(false);
   const [newCourse, setNewCourse] = useState({
@@ -89,6 +93,20 @@ const AttendancePage: React.FC = () => {
   const startRecordingAttendance = () => {
     if (selectedCourse) {
       setIsRecording(true);
+      setIsQuickAttendance(false);
+    } else {
+      toast({
+        title: 'Error',
+        description: 'Please select a course first',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const startQuickAttendance = () => {
+    if (selectedCourse) {
+      setIsQuickAttendance(true);
+      setIsRecording(false);
     } else {
       toast({
         title: 'Error',
@@ -100,6 +118,7 @@ const AttendancePage: React.FC = () => {
 
   const cancelRecording = () => {
     setIsRecording(false);
+    setIsQuickAttendance(false);
   };
 
   const handleCourseSelect = (course: Course) => {
@@ -117,19 +136,15 @@ const AttendancePage: React.FC = () => {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('courses')
-        .insert({
-          title: newCourse.title,
-          description: newCourse.description,
-          category: newCourse.category,
-          teacher_id: currentUser?.id
-        })
-        .select()
-        .single();
+      const { data, error } = await addCourse({
+        title: newCourse.title,
+        description: newCourse.description,
+        category: newCourse.category,
+        teacher_id: currentUser?.id
+      });
 
       if (error) {
-        throw error;
+        throw new Error(error);
       }
 
       toast({
@@ -141,11 +156,11 @@ const AttendancePage: React.FC = () => {
       setNewCourse({ title: '', description: '', category: 'other' });
       setIsAddingCourse(false);
       fetchCourses();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding course:', error);
       toast({
         title: 'Error',
-        description: 'Failed to add course',
+        description: error.message || 'Failed to add course',
         variant: 'destructive'
       });
     }
@@ -274,6 +289,17 @@ const AttendancePage: React.FC = () => {
                     </Button>
                   ))}
                 </div>
+                
+                {(currentUser?.role === 'teacher' || currentUser?.role === 'admin') && selectedCourse && (
+                  <div className="mt-6 space-y-2">
+                    <Separator />
+                    <p className="text-sm text-gray-500 py-2">Course Management</p>
+                    <StudentEnrollment 
+                      courseId={selectedCourse.id} 
+                      onEnrollmentChange={fetchCourses}
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -293,6 +319,13 @@ const AttendancePage: React.FC = () => {
                   });
                 }}
               />
+            ) : isQuickAttendance ? (
+              <QuickAttendance 
+                courseId={selectedCourse!.id}
+                onComplete={() => {
+                  setIsQuickAttendance(false);
+                }}
+              />
             ) : (
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -305,10 +338,16 @@ const AttendancePage: React.FC = () => {
                     </CardDescription>
                   </div>
                   {currentUser?.role === 'teacher' && selectedCourse && (
-                    <Button onClick={startRecordingAttendance}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Record Attendance
-                    </Button>
+                    <div className="flex space-x-2">
+                      <Button variant="outline" onClick={startQuickAttendance}>
+                        <ClipboardCheck className="mr-2 h-4 w-4" />
+                        Quick Attendance
+                      </Button>
+                      <Button onClick={startRecordingAttendance}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Record Attendance
+                      </Button>
+                    </div>
                   )}
                 </CardHeader>
                 
@@ -351,6 +390,7 @@ const AttendancePage: React.FC = () => {
                             courseId={selectedCourse.id} 
                             isTeacher={currentUser?.role === 'teacher'} 
                             studentId={currentUser?.role === 'student' ? currentUser.id : undefined}
+                            onRecordUpdated={fetchCourses}
                           />
                         )}
                       </TabsContent>
