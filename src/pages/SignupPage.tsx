@@ -8,16 +8,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { UserRole } from '@/types/cms';
 
-const LoginPage: React.FC = () => {
+const SignupPage: React.FC = () => {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState<UserRole>('student');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login, isAuthenticated } = useAuth();
+  const { signup, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
   
   // If user is already authenticated, redirect to dashboard
   if (isAuthenticated) {
@@ -27,8 +30,18 @@ const LoginPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password) {
-      setError('Please enter both email and password');
+    if (!name || !email || !password || !confirmPassword) {
+      setError('Please fill in all fields');
+      return;
+    }
+    
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long');
       return;
     }
     
@@ -36,15 +49,13 @@ const LoginPage: React.FC = () => {
     setError('');
     
     try {
-      const success = await login(email, password);
+      const success = await signup(email, password, name, role);
       
       if (success) {
-        navigate('/dashboard');
-      } else {
-        setError('Invalid email or password');
+        navigate('/login');
       }
     } catch (err) {
-      setError('An error occurred during login');
+      setError('An error occurred during signup');
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -63,9 +74,9 @@ const LoginPage: React.FC = () => {
       
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Login</CardTitle>
+          <CardTitle>Create an Account</CardTitle>
           <CardDescription>
-            Enter your credentials to access your account
+            Sign up to get started with the CMS Platform
           </CardDescription>
         </CardHeader>
         
@@ -78,6 +89,18 @@ const LoginPage: React.FC = () => {
           
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="John Doe"
+                  required
+                />
+              </div>
+              
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -99,9 +122,39 @@ const LoginPage: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   required
                 />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                  required
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="role">Role</Label>
+                <Select
+                  value={role}
+                  onValueChange={(value) => setRole(value as UserRole)}
+                >
+                  <SelectTrigger id="role">
+                    <SelectValue placeholder="Select a role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="student">Student</SelectItem>
+                    <SelectItem value="teacher">Teacher</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               
               <Button
@@ -112,21 +165,21 @@ const LoginPage: React.FC = () => {
                 {isLoading ? (
                   <span className="flex items-center">
                     <span className="animate-spin mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full"></span>
-                    Logging in...
+                    Creating Account...
                   </span>
                 ) : (
-                  'Login'
+                  'Sign Up'
                 )}
               </Button>
             </div>
           </form>
         </CardContent>
         
-        <CardFooter className="flex flex-col gap-4">
+        <CardFooter>
           <div className="w-full text-center">
-            Don't have an account?{' '}
-            <Link to="/signup" className="text-cms-primary hover:underline">
-              Sign up
+            Already have an account?{' '}
+            <Link to="/login" className="text-cms-primary hover:underline">
+              Log in
             </Link>
           </div>
         </CardFooter>
@@ -135,4 +188,4 @@ const LoginPage: React.FC = () => {
   );
 };
 
-export default LoginPage;
+export default SignupPage;
