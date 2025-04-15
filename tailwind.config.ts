@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,27 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// CMS theme colors
+				cms: {
+					primary: '#8B5CF6',
+					secondary: '#D946EF',
+					accent: '#F97316',
+					background: {
+						light: '#FFFFFF',
+						dark: '#1A1F2C',
+					},
+					text: {
+						primary: '#1A1F2C',
+						secondary: '#8E9196',
+					},
+					course: {
+						math: '#D3E4FD',
+						science: '#F2FCE2',
+						literature: '#FDE1D3',
+						history: '#FFDEE2',
+						programming: '#E5DEFF',
+					}
 				}
 			},
 			borderRadius: {
@@ -84,11 +106,19 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'fade-in': {
+					'0%': { opacity: '0' },
+					'100%': { opacity: '1' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'fade-in': 'fade-in 0.5s ease-out'
+			},
+			fontFamily: {
+				sans: ['Inter', 'sans-serif'],
 			}
 		}
 	},

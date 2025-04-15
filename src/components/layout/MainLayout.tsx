@@ -1,9 +1,11 @@
 
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import Sidebar from './Sidebar';
+import { Toaster } from '@/components/ui/toaster';
 
-const Index = () => {
+const MainLayout: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuth();
   
   // Show loading state
@@ -18,12 +20,22 @@ const Index = () => {
     );
   }
   
-  // Redirect based on authentication status
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
-  } else {
+  // Redirect to login if not authenticated
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
+  
+  return (
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <main className="flex-1 overflow-y-auto">
+        <div className="container mx-auto py-8 px-4">
+          <Outlet />
+        </div>
+      </main>
+      <Toaster />
+    </div>
+  );
 };
 
-export default Index;
+export default MainLayout;
