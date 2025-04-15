@@ -8,11 +8,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { Course } from '@/types/cms';
-import { CalendarCheck, ClipboardCheck, Plus } from 'lucide-react';
+import { CalendarCheck, ClipboardCheck, Plus, UserPlus } from 'lucide-react';
 import CourseAttendanceList from '@/components/attendance/CourseAttendanceList';
 import AttendanceForm from '@/components/attendance/AttendanceForm';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const AttendancePage: React.FC = () => {
   const { currentUser } = useAuth();
@@ -21,62 +25,66 @@ const AttendancePage: React.FC = () => {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAddingCourse, setIsAddingCourse] = useState(false);
+  const [newCourse, setNewCourse] = useState({
+    title: '',
+    description: '',
+    category: 'other'
+  });
 
   useEffect(() => {
-    const fetchCourses = async () => {
-      setIsLoading(true);
-      try {
-        let query;
-        
-        if (currentUser?.role === 'teacher') {
-          // Teachers see the courses they teach
-          query = supabase
-            .from('courses')
-            .select('*')
-            .eq('teacher_id', currentUser.id);
-        } else if (currentUser?.role === 'student') {
-          // Students see the courses they're enrolled in
-          query = supabase
-            .from('courses')
-            .select('*')
-            .eq('enrollments.student_id', currentUser.id)
-            .order('created_at', { ascending: false });
-        } else if (currentUser?.role === 'admin') {
-          // Admins see all courses
-          query = supabase
-            .from('courses')
-            .select('*')
-            .order('created_at', { ascending: false });
-        }
+    fetchCourses();
+  }, [currentUser]);
 
-        if (query) {
-          const { data, error } = await query;
-          
-          if (error) {
-            console.error('Error fetching courses:', error);
-            toast({
-              title: 'Error',
-              description: 'Failed to load courses',
-              variant: 'destructive',
-            });
-          } else {
-            setCourses(data as Course[]);
-            if (data.length > 0 && !selectedCourse) {
-              setSelectedCourse(data[0] as Course);
-            }
+  const fetchCourses = async () => {
+    setIsLoading(true);
+    try {
+      let query;
+      
+      if (currentUser?.role === 'teacher') {
+        // Teachers see the courses they teach
+        query = supabase
+          .from('courses')
+          .select('*')
+          .eq('teacher_id', currentUser.id);
+      } else if (currentUser?.role === 'student') {
+        // Students see the courses they're enrolled in
+        query = supabase
+          .from('courses')
+          .select('*')
+          .eq('enrollments.student_id', currentUser.id)
+          .order('created_at', { ascending: false });
+      } else if (currentUser?.role === 'admin') {
+        // Admins see all courses
+        query = supabase
+          .from('courses')
+          .select('*')
+          .order('created_at', { ascending: false });
+      }
+
+      if (query) {
+        const { data, error } = await query;
+        
+        if (error) {
+          console.error('Error fetching courses:', error);
+          toast({
+            title: 'Error',
+            description: 'Failed to load courses',
+            variant: 'destructive',
+          });
+        } else {
+          setCourses(data as Course[]);
+          if (data.length > 0 && !selectedCourse) {
+            setSelectedCourse(data[0] as Course);
           }
         }
-      } catch (error) {
-        console.error('Error in fetchCourses:', error);
-      } finally {
-        setIsLoading(false);
       }
-    };
-
-    if (currentUser) {
-      fetchCourses();
+    } catch (error) {
+      console.error('Error in fetchCourses:', error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [currentUser]);
+  };
 
   const startRecordingAttendance = () => {
     if (selectedCourse) {
@@ -98,6 +106,51 @@ const AttendancePage: React.FC = () => {
     setSelectedCourse(course);
   };
 
+  const handleAddCourse = async () => {
+    if (!newCourse.title) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a course title',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('courses')
+        .insert({
+          title: newCourse.title,
+          description: newCourse.description,
+          category: newCourse.category,
+          teacher_id: currentUser?.id
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Course added successfully'
+      });
+
+      // Reset form and refresh courses
+      setNewCourse({ title: '', description: '', category: 'other' });
+      setIsAddingCourse(false);
+      fetchCourses();
+    } catch (error) {
+      console.error('Error adding course:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to add course',
+        variant: 'destructive'
+      });
+    }
+  };
+
   // Render loading state
   if (isLoading) {
     return (
@@ -109,9 +162,69 @@ const AttendancePage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Attendance Management</h1>
-        <p className="text-gray-500 mt-1">Track and manage course attendance</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Attendance Management</h1>
+          <p className="text-gray-500 mt-1">Track and manage course attendance</p>
+        </div>
+        
+        {(currentUser?.role === 'teacher' || currentUser?.role === 'admin') && (
+          <Dialog open={isAddingCourse} onOpenChange={setIsAddingCourse}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Course
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add New Course</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Course Title</Label>
+                  <Input 
+                    id="title" 
+                    value={newCourse.title} 
+                    onChange={(e) => setNewCourse({...newCourse, title: e.target.value})}
+                    placeholder="Introduction to Mathematics"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Input 
+                    id="description" 
+                    value={newCourse.description} 
+                    onChange={(e) => setNewCourse({...newCourse, description: e.target.value})}
+                    placeholder="A basic course in mathematics"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="category">Category</Label>
+                  <Select 
+                    value={newCourse.category} 
+                    onValueChange={(value) => setNewCourse({...newCourse, category: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="math">Mathematics</SelectItem>
+                      <SelectItem value="science">Science</SelectItem>
+                      <SelectItem value="literature">Literature</SelectItem>
+                      <SelectItem value="history">History</SelectItem>
+                      <SelectItem value="programming">Programming</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button className="w-full mt-4" onClick={handleAddCourse}>
+                  Add Course
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
       
       {courses.length === 0 ? (
@@ -124,6 +237,12 @@ const AttendancePage: React.FC = () => {
                 ? "You don't have any courses to manage attendance for." 
                 : "You haven't been enrolled in any courses yet."}
             </p>
+            {(currentUser?.role === 'teacher' || currentUser?.role === 'admin') && (
+              <Button onClick={() => setIsAddingCourse(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Course
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -131,9 +250,16 @@ const AttendancePage: React.FC = () => {
           {/* Course Selection */}
           <div className="md:col-span-1">
             <Card>
-              <CardHeader>
-                <CardTitle>Courses</CardTitle>
-                <CardDescription>Select a course to view or record attendance</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div>
+                  <CardTitle>Courses</CardTitle>
+                  <CardDescription>Select a course to view or record attendance</CardDescription>
+                </div>
+                {(currentUser?.role === 'teacher' || currentUser?.role === 'admin') && (
+                  <Button variant="outline" size="sm" onClick={() => setIsAddingCourse(true)}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                )}
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
