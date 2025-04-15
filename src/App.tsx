@@ -16,6 +16,7 @@ import SignupPage from './pages/SignupPage';
 import DashboardPage from './pages/DashboardPage';
 import CoursesPage from './pages/CoursesPage';
 import CourseDetailPage from './pages/CourseDetailPage';
+import AttendancePage from './pages/AttendancePage';
 import NotFound from './pages/NotFound';
 
 const queryClient = new QueryClient();
@@ -38,9 +39,9 @@ const App = () => (
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/courses" element={<CoursesPage />} />
               <Route path="/courses/:courseId" element={<CourseDetailPage />} />
+              <Route path="/attendance" element={<AttendancePage />} />
               {/* Additional routes to be implemented */}
               <Route path="/assignments" element={<DashboardPage />} />
-              <Route path="/attendance" element={<DashboardPage />} />
               <Route path="/calendar" element={<DashboardPage />} />
               <Route path="/profile" element={<DashboardPage />} />
               <Route path="/teachers" element={<DashboardPage />} />

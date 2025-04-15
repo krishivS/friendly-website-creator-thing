@@ -47,6 +47,35 @@ export type Database = {
           },
         ]
       }
+      attendance_records: {
+        Row: {
+          course_id: string
+          created_at: string
+          date: string
+          id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          date: string
+          id?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          date?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_records_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           category: string | null
@@ -179,6 +208,45 @@ export type Database = {
           role?: string
         }
         Relationships: []
+      }
+      student_attendance: {
+        Row: {
+          attendance_record_id: string
+          created_at: string
+          id: string
+          status: string
+          student_id: string
+        }
+        Insert: {
+          attendance_record_id: string
+          created_at?: string
+          id?: string
+          status: string
+          student_id: string
+        }
+        Update: {
+          attendance_record_id?: string
+          created_at?: string
+          id?: string
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_attendance_attendance_record_id_fkey"
+            columns: ["attendance_record_id"]
+            isOneToOne: false
+            referencedRelation: "attendance_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_attendance_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       submissions: {
         Row: {
