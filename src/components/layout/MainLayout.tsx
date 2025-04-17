@@ -1,12 +1,18 @@
 
-import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Navigate, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Sidebar from './Sidebar';
 import { Toaster } from '@/components/ui/toaster';
 
 const MainLayout: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, currentUser } = useAuth();
+  const navigate = useNavigate();
+  
+  // Debug authentication state
+  useEffect(() => {
+    console.log('MainLayout auth state:', { isAuthenticated, isLoading, currentUser });
+  }, [isAuthenticated, isLoading, currentUser]);
   
   // Show loading state
   if (isLoading) {
@@ -22,6 +28,7 @@ const MainLayout: React.FC = () => {
   
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
+    console.log('User not authenticated in MainLayout, redirecting to login');
     return <Navigate to="/login" replace />;
   }
   

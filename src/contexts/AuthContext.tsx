@@ -30,10 +30,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
+  // Debugging
+  useEffect(() => {
+    console.log('Auth state in AuthProvider:', { 
+      hasUser: !!currentUser, 
+      isAuthenticated: !!currentUser,
+      user: currentUser 
+    });
+  }, [currentUser]);
+
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state change event:', event);
         setSession(session);
         
         if (session?.user) {
@@ -50,19 +60,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               setCurrentUser(null);
             } else if (profile) {
               // Transform Supabase profile to our User model
-              setCurrentUser({
+              const user = {
                 id: profile.id,
                 name: profile.name,
                 email: profile.email,
                 role: profile.role as UserRole,
                 avatar: profile.avatar,
-              });
+              };
+              console.log('Setting current user:', user);
+              setCurrentUser(user);
             }
           } catch (error) {
             console.error('Error in auth state change:', error);
             setCurrentUser(null);
           }
         } else {
+          console.log('No session user, setting currentUser to null');
           setCurrentUser(null);
         }
       }
@@ -70,6 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Check for existing session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      console.log('Got initial session:', session ? 'Yes' : 'No');
       setSession(session);
 
       if (session?.user) {
@@ -86,13 +100,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setCurrentUser(null);
           } else if (profile) {
             // Transform Supabase profile to our User model
-            setCurrentUser({
+            const user = {
               id: profile.id,
               name: profile.name,
               email: profile.email,
               role: profile.role as UserRole,
               avatar: profile.avatar,
-            });
+            };
+            console.log('Setting initial user:', user);
+            setCurrentUser(user);
           }
         } catch (error) {
           console.error('Error fetching profile:', error);
@@ -129,6 +145,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       if (data.user) {
+        console.log('Login successful. User:', data.user.email);
         toast({
           title: 'Success',
           description: 'You have been logged in successfully',

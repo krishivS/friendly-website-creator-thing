@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { BookOpen } from 'lucide-react';
@@ -15,12 +15,18 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, currentUser } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   
+  // Debugging
+  useEffect(() => {
+    console.log('Auth state in LoginPage:', { isAuthenticated, currentUser });
+  }, [isAuthenticated, currentUser]);
+  
   // If user is already authenticated, redirect to dashboard
   if (isAuthenticated) {
+    console.log('User is authenticated, redirecting to dashboard');
     return <Navigate to="/dashboard" replace />;
   }
   
@@ -39,13 +45,18 @@ const LoginPage: React.FC = () => {
       const success = await login(email, password);
       
       if (success) {
-        navigate('/dashboard');
+        console.log('Login successful, navigating to dashboard');
+        navigate('/dashboard', { replace: true });
+        toast({
+          title: 'Login successful',
+          description: 'Welcome back!',
+        });
       } else {
         setError('Invalid email or password');
       }
     } catch (err) {
       setError('An error occurred during login');
-      console.error(err);
+      console.error('Login error:', err);
     } finally {
       setIsLoading(false);
     }
