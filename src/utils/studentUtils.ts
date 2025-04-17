@@ -26,10 +26,11 @@ export const addStudent = async (
       return { data: existingStudent, error: 'Student with this email already exists' };
     }
 
-    // Add new student
+    // Add new student with a generated UUID
     const { data, error } = await supabase
       .from('profiles')
       .insert({
+        id: crypto.randomUUID(), // Generate UUID for the student
         name: studentData.name,
         email: studentData.email,
         role: 'student',

@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Redirect } from "react-router-dom";
 import { AuthProvider } from './contexts/AuthContext';
 
 // Layouts
@@ -17,6 +17,7 @@ import DashboardPage from './pages/DashboardPage';
 import CoursesPage from './pages/CoursesPage';
 import CourseDetailPage from './pages/CourseDetailPage';
 import AttendancePage from './pages/AttendancePage';
+import AdminPage from './pages/AdminPage';
 import NotFound from './pages/NotFound';
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
               <Route path="/courses" element={<CoursesPage />} />
               <Route path="/courses/:courseId" element={<CourseDetailPage />} />
               <Route path="/attendance" element={<AttendancePage />} />
+              <Route path="/admin" element={<AdminPage />} />
               {/* Additional routes to be implemented */}
               <Route path="/assignments" element={<DashboardPage />} />
               <Route path="/calendar" element={<DashboardPage />} />
