@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import UsersList from '@/components/admin/UsersList';
 import { useAuth } from '@/contexts/AuthContext';
-import { Redirect } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 
 const AdminPage: React.FC = () => {
   const { currentUser } = useAuth();
@@ -12,7 +12,7 @@ const AdminPage: React.FC = () => {
   
   // Only allow admins to access this page
   if (!currentUser || currentUser.role !== 'admin') {
-    return <Redirect to="/dashboard" />;
+    return <Navigate to="/dashboard" replace />;
   }
   
   return (
