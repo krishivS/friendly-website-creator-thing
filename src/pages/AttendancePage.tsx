@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { Course } from '@/types/cms';
-import { CalendarCheck, ClipboardCheck, Plus, UserPlus } from 'lucide-react';
+import { CalendarCheck, ClipboardCheck, Plus, UserPlus, BookOpen, User } from 'lucide-react';
 import CourseAttendanceList from '@/components/attendance/CourseAttendanceList';
 import AttendanceForm from '@/components/attendance/AttendanceForm';
 import { Separator } from '@/components/ui/separator';
@@ -20,6 +19,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { addCourse } from '@/utils/courseUtils';
 import StudentEnrollment from '@/components/courses/StudentEnrollment';
 import QuickAttendance from '@/components/attendance/QuickAttendance';
+import StudentManagement from '@/components/students/StudentManagement';
+import CourseEnrollment from '@/components/courses/CourseEnrollment';
 
 const AttendancePage: React.FC = () => {
   const { currentUser } = useAuth();
@@ -46,20 +47,17 @@ const AttendancePage: React.FC = () => {
       let query;
       
       if (currentUser?.role === 'teacher') {
-        // Teachers see the courses they teach
         query = supabase
           .from('courses')
           .select('*')
           .eq('teacher_id', currentUser.id);
       } else if (currentUser?.role === 'student') {
-        // Students see the courses they're enrolled in
         query = supabase
           .from('courses')
           .select('*')
           .eq('enrollments.student_id', currentUser.id)
           .order('created_at', { ascending: false });
       } else if (currentUser?.role === 'admin') {
-        // Admins see all courses
         query = supabase
           .from('courses')
           .select('*')
@@ -152,7 +150,6 @@ const AttendancePage: React.FC = () => {
         description: 'Course added successfully'
       });
 
-      // Reset form and refresh courses
       setNewCourse({ title: '', description: '', category: 'other' });
       setIsAddingCourse(false);
       fetchCourses();
@@ -166,7 +163,6 @@ const AttendancePage: React.FC = () => {
     }
   };
 
-  // Render loading state
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -183,63 +179,72 @@ const AttendancePage: React.FC = () => {
           <p className="text-gray-500 mt-1">Track and manage course attendance</p>
         </div>
         
-        {(currentUser?.role === 'teacher' || currentUser?.role === 'admin') && (
-          <Dialog open={isAddingCourse} onOpenChange={setIsAddingCourse}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Course
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add New Course</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Course Title</Label>
-                  <Input 
-                    id="title" 
-                    value={newCourse.title} 
-                    onChange={(e) => setNewCourse({...newCourse, title: e.target.value})}
-                    placeholder="Introduction to Mathematics"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Input 
-                    id="description" 
-                    value={newCourse.description} 
-                    onChange={(e) => setNewCourse({...newCourse, description: e.target.value})}
-                    placeholder="A basic course in mathematics"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                  <Select 
-                    value={newCourse.category} 
-                    onValueChange={(value) => setNewCourse({...newCourse, category: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="math">Mathematics</SelectItem>
-                      <SelectItem value="science">Science</SelectItem>
-                      <SelectItem value="literature">Literature</SelectItem>
-                      <SelectItem value="history">History</SelectItem>
-                      <SelectItem value="programming">Programming</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button className="w-full mt-4" onClick={handleAddCourse}>
-                  Add Course
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        )}
+        <div className="flex gap-2">
+          {(currentUser?.role === 'teacher' || currentUser?.role === 'admin') && (
+            <>
+              <StudentManagement onStudentAdded={fetchCourses} />
+              <Dialog open={isAddingCourse} onOpenChange={setIsAddingCourse}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Course
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add New Course</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="title">Course Title</Label>
+                      <Input 
+                        id="title" 
+                        value={newCourse.title} 
+                        onChange={(e) => setNewCourse({...newCourse, title: e.target.value})}
+                        placeholder="Introduction to Mathematics"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="description">Description</Label>
+                      <Input 
+                        id="description" 
+                        value={newCourse.description} 
+                        onChange={(e) => setNewCourse({...newCourse, description: e.target.value})}
+                        placeholder="A basic course in mathematics"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="category">Category</Label>
+                      <Select 
+                        value={newCourse.category} 
+                        onValueChange={(value) => setNewCourse({...newCourse, category: value})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="math">Mathematics</SelectItem>
+                          <SelectItem value="science">Science</SelectItem>
+                          <SelectItem value="literature">Literature</SelectItem>
+                          <SelectItem value="history">History</SelectItem>
+                          <SelectItem value="programming">Programming</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button className="w-full mt-4" onClick={handleAddCourse}>
+                      Add Course
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </>
+          )}
+          
+          {currentUser?.role === 'student' && (
+            <CourseEnrollment onEnrollmentChange={fetchCourses} />
+          )}
+        </div>
       </div>
       
       {courses.length === 0 ? (
@@ -258,11 +263,13 @@ const AttendancePage: React.FC = () => {
                 Add Course
               </Button>
             )}
+            {currentUser?.role === 'student' && (
+              <CourseEnrollment onEnrollmentChange={fetchCourses} />
+            )}
           </CardContent>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Course Selection */}
           <div className="md:col-span-1">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -304,7 +311,6 @@ const AttendancePage: React.FC = () => {
             </Card>
           </div>
 
-          {/* Calendar and Attendance Tabs */}
           <div className="md:col-span-2">
             {isRecording ? (
               <AttendanceForm 

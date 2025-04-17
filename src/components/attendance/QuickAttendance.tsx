@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -69,7 +70,7 @@ const QuickAttendance: React.FC<QuickAttendanceProps> = ({ courseId, onComplete 
       setStudents(enrolledStudents.map(student => ({
         id: student.id,
         name: student.name,
-        status: 'present' // Default to present
+        status: 'present' as const // Explicitly type as const to satisfy TypeScript
       })));
     } catch (error) {
       console.error('Error in fetchStudents:', error);
