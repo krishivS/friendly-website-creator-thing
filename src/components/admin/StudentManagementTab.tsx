@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { User } from '@/types/cms';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,8 +35,14 @@ const StudentManagementTab: React.FC = () => {
         return;
       }
       
-      setStudents(studentData);
-      setFilteredStudents(studentData);
+      // Convert string role to UserRole type
+      const typedStudents = studentData.map(student => ({
+        ...student,
+        role: student.role as User['role']
+      }));
+      
+      setStudents(typedStudents);
+      setFilteredStudents(typedStudents);
     } catch (error) {
       console.error('Error fetching students:', error);
       toast({
